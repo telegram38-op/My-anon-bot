@@ -10,7 +10,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type','text/html')
         self.end_headers()
-        self.wfile.write(b"Bot is Running Safely!")
+        self.wfile.write(b"Bot is Running Safely on Both Groups!")
 
 def run_server():
     port = int(os.environ.get("PORT", 8080))
@@ -23,12 +23,14 @@ threading.Thread(target=run_server, daemon=True).start()
 api_id = 30052784
 api_hash = 'd293751024445d1d9d56d75e9bd80c01'
 bot_token = '8679827577:AAE3tjUf0p_qiBBfUfO9b_2sNjITMt0FXuQ'
-target_group = [​-1001902540748, -1003684964048] 
+
+# Aapki di hui dono IDs yahan hain
+target_groups = [-1003684964048, -1001902540748] 
 
 client = TelegramClient('anon_session', api_id, api_hash)
 user_cooldown = {}
 
-@client.on(events.NewMessage(chats=target_group))
+@client.on(events.NewMessage(chats=target_groups))
 async def handler(event):
     if event.sender_id == (await client.get_me()).id:
         return
@@ -36,6 +38,7 @@ async def handler(event):
     user_id = event.sender_id
     current_time = asyncio.get_event_loop().time()
 
+    # 3 second ka gap cooldown
     if user_id in user_cooldown and current_time - user_cooldown[user_id] < 3:
         try: await event.delete()
         except: pass
@@ -51,10 +54,9 @@ async def handler(event):
         except Exception as e:
             print(f"Error: {e}")
 
-# --- Naye Python version ke liye Fix ---
 async def main():
     await client.start(bot_token=bot_token)
-    print("✅ Bot is online now!")
+    print("✅ Bot is online and working on both groups!")
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
