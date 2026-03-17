@@ -2,7 +2,6 @@ import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 from telethon import TelegramClient, events
-from telethon.tl.types import ChannelParticipantsAdmins
 import asyncio
 import hashlib
 
@@ -27,44 +26,63 @@ api_hash = 'd293751024445d1d9d56d75e9bd80c01'
 bot_token = '8679827577:AAE3tjUf0p_qiBBfUfO9b_2sNjITMt0FXuQ'
 target_groups = [-1003684964048, -1001902540748] 
 
+# Aapki dono Whitelisted IDs
+WHITELISTED_IDS = [5960920349, 7720568554]
+
 client = TelegramClient('anon_session', api_id, api_hash)
 
-# User ID se ek chota unique code banane ke liye function
-def get_unique_name(user_id):
-    readable_hash = hashlib.md5(str(user_id).encode()).hexdigest()[:5].upper()
-    return f"Member_{readable_hash}"
+# Member ke naam se unique code banane ke liye function
+def get_member_identity(user):
+    first_name = user.first_name if user.first_name else "User"
+    # Naam ko clean karke uppercase mein lena
+    clean_name = "".join(x for x in first_name if x.isalnum()).upper()[:8]
+    # Ek unique hash suffix taaki same naam ke log alag dikhein
+    unique_suffix = hashlib.md5(str(user.id).encode()).hexdigest()[:4].upper()
+    return f"Member_{clean_name}_{unique_suffix}"
 
 @client.on(events.NewMessage(chats=target_groups))
 async def handler(event):
-    if event.sender_id == (await client.get_me()).id:
+    if not event.sender_id:
         return
 
-    # 1. Admin/Owner Check
-    # Agar admin message karega toh bot ignore karega
-    try:
-        permissions = await client.get_permissions(event.chat_id, event.sender_id)
-        if permissions.is_admin or permissions.is_creator:
-            return 
-    except:
-        pass # Agar permissions check na ho payein toh normal process karega
+    # 1. Bot ke apne message ignore karein
+    me = await client.get_me()
+    if event.sender_id == me.id:
+        return
 
-    # 2. Duplicate Fix
+    # 2. ADMIN/OWNER BYPASS
+    # Agar aap dono message karenge toh bot touch nahi karega
+    if event.sender_id in WHITELISTED_IDS:
+        return
+
+    # 3. Duplicate check (Anonymous format ignore)
     if event.text and "👤 **Member_" in event.text:
         return
     
     if event.text:
-        user_code = get_unique_name(event.sender_id)
+        sender = await event.get_sender()
+        user_identity = get_member_identity(sender)
         msg_text = event.text
         try:
+            # Check permissions for other admins
+            perms = await client.get_permissions(event.chat_id, event.sender_id)
+            if perms.is_admin or perms.is_creator:
+                return
+
             await event.delete()
-            # Ab ye dikhayega: 👤 Member_A1B2: Message
-            await client.send_message(event.chat_id, f"👤 **{user_code}:**\n\n{msg_text}")
+            # Naya Format: 👤 Member_NAME_CODE: Message
+            await client.send_message(event.chat_id, f"👤 **{user_identity}:**\n\n{msg_text}")
         except Exception as e:
             print(f"Error: {e}")
+            # Agar permissions check fail ho toh safety ke liye anonymous kar dena
+            try:
+                await event.delete()
+                await client.send_message(event.chat_id, f"👤 **{user_identity}:**\n\n{msg_text}")
+            except: pass
 
 async def main():
     await client.start(bot_token=bot_token)
-    print("✅ Bot is online with Admin Bypass & Unique IDs!")
+    print("✅ Bot is online with Personalized IDs!")
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
