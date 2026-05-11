@@ -24,7 +24,7 @@ threading.Thread(target=run_server, daemon=True).start()
 api_id = 30052784
 api_hash = 'd293751024445d1d9d56d75e9bd80c01'
 bot_token = '8679827577:AAE3tjUf0p_qiBBfUfO9b_2sNjITMt0FXuQ'
-target_groups = [-1003684964048, -1001902540748] 
+target_groups = [-1003684964048, -1001902540748, -1003903763308] 
 
 # Aapki dono Whitelisted IDs
 WHITELISTED_IDS = [5960920349, 7720568554]
